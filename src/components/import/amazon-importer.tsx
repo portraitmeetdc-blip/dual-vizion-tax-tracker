@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, AlertCircle, ExternalLink, ChevronDown, ChevronRight, ShoppingCart } from "lucide-react";
+import { Upload, FileText, AlertCircle, ExternalLink, ChevronDown, ChevronRight, ShoppingCart, ArrowLeft } from "lucide-react";
 import { parseAmazonCSV, type AmazonItem } from "@/lib/csv-parsers/amazon-parser";
 import { ImportPreview } from "./import-preview";
 import type { Category } from "@/db/schema";
+
+const OFFICE_SUPPLIES_ID = 15;
 
 interface AmazonImporterProps {
   taxYear: number;
@@ -18,12 +20,24 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
   const [isParsed, setIsParsed] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showSteps, setShowSteps] = useState(true);
+  const [bulkCategoryId, setBulkCategoryId] = useState(OFFICE_SUPPLIES_ID);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const applyDefaultCategory = (items: AmazonItem[]): AmazonItem[] => {
+    const defaultCat = categories.find((c) => c.id === OFFICE_SUPPLIES_ID);
+    const defaultName = defaultCat?.name || "Office Supplies & Expenses";
+    return items.map((item) => ({
+      ...item,
+      suggestedCategoryId: OFFICE_SUPPLIES_ID,
+      suggestedCategory: defaultName,
+    }));
+  };
 
   const handleParse = () => {
     if (!csvText.trim()) return;
-    const items = parseAmazonCSV(csvText);
+    const items = applyDefaultCategory(parseAmazonCSV(csvText));
     setParsedItems(items);
+    setBulkCategoryId(OFFICE_SUPPLIES_ID);
     setIsParsed(true);
   };
 
@@ -35,11 +49,25 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       setCsvText(text);
-      const items = parseAmazonCSV(text);
+      const items = applyDefaultCategory(parseAmazonCSV(text));
       setParsedItems(items);
+      setBulkCategoryId(OFFICE_SUPPLIES_ID);
       setIsParsed(true);
     };
     reader.readAsText(file);
+  };
+
+  const handleBulkCategoryChange = (categoryId: number) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat) return;
+    setBulkCategoryId(categoryId);
+    setParsedItems(
+      parsedItems.map((item) => ({
+        ...item,
+        suggestedCategoryId: categoryId,
+        suggestedCategory: cat.name,
+      }))
+    );
   };
 
   const handleImport = async () => {
@@ -71,19 +99,51 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
 
   if (isParsed && parsedItems.length > 0) {
     return (
-      <ImportPreview
-        items={parsedItems}
-        categories={categories}
-        onCategoryChange={handleCategoryChange}
-        onRemove={handleRemoveItem}
-        onConfirm={handleImport}
-        onCancel={() => {
-          setIsParsed(false);
-          setParsedItems([]);
-        }}
-        importing={importing}
-        title="Amazon Purchase Import Preview"
-      />
+      <div>
+        {/* Bulk category selector */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Import all items to:
+            </label>
+            <select
+              value={bulkCategoryId}
+              onChange={(e) => handleBulkCategoryChange(parseInt(e.target.value))}
+              className="border rounded px-3 py-1.5 text-sm flex-1 max-w-xs"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                setIsParsed(false);
+                setParsedItems([]);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Back
+            </button>
+          </div>
+        </div>
+
+        <ImportPreview
+          items={parsedItems}
+          categories={categories}
+          onCategoryChange={handleCategoryChange}
+          onRemove={handleRemoveItem}
+          onConfirm={handleImport}
+          onCancel={() => {
+            setIsParsed(false);
+            setParsedItems([]);
+          }}
+          importing={importing}
+          title="Amazon Purchase Import Preview"
+        />
+      </div>
     );
   }
 
