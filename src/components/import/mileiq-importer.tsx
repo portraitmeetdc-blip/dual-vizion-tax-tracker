@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Upload, MapPin, X, Check, Loader2, ExternalLink, AlertCircle, ChevronDown, ChevronRight, Smartphone } from "lucide-react";
-import { parseMileIQCSV, type MileIQEntry } from "@/lib/csv-parsers/mileiq-parser";
+import { parseMileIQData, type MileIQEntry } from "@/lib/csv-parsers/mileiq-parser";
 import { formatCurrency } from "@/lib/utils";
 import { IRS_MILEAGE_RATES } from "@/lib/constants";
 
@@ -27,7 +27,7 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const parsed = parseMileIQCSV(text, taxYear);
+      const parsed = parseMileIQData(text, taxYear);
       setEntries(parsed);
       setIsParsed(true);
     };
@@ -273,19 +273,19 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
             className="flex items-center justify-center gap-2 w-full py-4 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
           >
             <Upload className="w-5 h-5" />
-            Upload MileIQ CSV File
+            Upload MileIQ File (CSV or JSON)
           </button>
 
           <input
             ref={fileRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.json,.txt"
             onChange={handleFileUpload}
             className="hidden"
           />
 
           <p className="text-xs text-gray-400 text-center">
-            Expected columns: Date, Start, Stop, Miles, Parking, Tolls, Purpose
+            Accepts CSV or JSON format from MileIQ exports
           </p>
         </div>
       </div>
