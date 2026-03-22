@@ -13,15 +13,86 @@ export interface MileIQEntry {
 }
 
 export function parseMileIQData(text: string, taxYear: number): MileIQEntry[] {
-  const trimmed = text.trim();
+  let trimmed = text.trim();
 
   // Detect if it's JSON (starts with [ or {)
   if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
     return parseMileIQJSON(trimmed, taxYear);
   }
 
-  // Otherwise treat as CSV
+  // Check for MileIQ detailed log format (has START_DATE* header)
+  const detailedIdx = trimmed.indexOf("START_DATE*,END_DATE*");
+  if (detailedIdx >= 0) {
+    // Extract just the detailed log section
+    let csvSection = trimmed.substring(detailedIdx);
+    // Stop at "Totals" or "Report created"
+    const totalsIdx = csvSection.indexOf("\nTotals,");
+    if (totalsIdx > 0) csvSection = csvSection.substring(0, totalsIdx);
+    const reportIdx = csvSection.indexOf("\nReport created");
+    if (reportIdx > 0) csvSection = csvSection.substring(0, reportIdx);
+    return parseMileIQDetailedLog(csvSection.trim(), taxYear);
+  }
+
+  // Otherwise treat as standard CSV
   return parseMileIQCSV(trimmed, taxYear);
+}
+
+function parseMileIQDetailedLog(csvText: string, taxYear: number): MileIQEntry[] {
+  const rate = IRS_MILEAGE_RATES[taxYear] || 0.7;
+
+  const result = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+  });
+
+  const entries: MileIQEntry[] = [];
+
+  for (const row of result.data as Record<string, string>[]) {
+    const startDate = (row["START_DATE*"] || "").trim();
+    const start = (row["START*"] || "").trim();
+    const stop = (row["STOP*"] || "").trim();
+    const milesStr = (row["MILES*"] || "0").trim();
+    const parkingStr = (row["PARKING"] || "0").trim();
+    const tollsStr = (row["TOLLS"] || "0").trim();
+    const purpose = (row["PURPOSE"] || "").trim();
+    const category = (row["CATEGORY*"] || "").trim();
+
+    // Skip non-business drives
+    if (category && category !== "Business") continue;
+
+    const miles = parseFloat(milesStr.replace(/[^0-9.]/g, "")) || 0;
+    const parking = parseFloat(parkingStr.replace(/[^0-9.]/g, "")) || 0;
+    const tolls = parseFloat(tollsStr.replace(/[^0-9.]/g, "")) || 0;
+
+    if (miles === 0 && parking === 0 && tolls === 0) continue;
+
+    // Parse date (MM/DD/YYYY HH:MM format)
+    let dateStr = "";
+    if (startDate) {
+      const datePart = startDate.split(" ")[0];
+      const d = new Date(datePart);
+      if (!isNaN(d.getTime())) dateStr = d.toISOString().split("T")[0];
+    }
+
+    const deductionAmount = miles * rate + parking + tolls;
+
+    // Shorten addresses to just the street
+    const shortStart = start.split(",")[0];
+    const shortStop = stop.split(",")[0];
+
+    entries.push({
+      date: dateStr,
+      startLocation: shortStart,
+      stopLocation: shortStop,
+      miles,
+      parking,
+      tolls,
+      purpose,
+      deductionAmount: Math.round(deductionAmount * 100) / 100,
+    });
+  }
+
+  return entries;
 }
 
 function parseMileIQJSON(jsonText: string, taxYear: number): MileIQEntry[] {

@@ -16,7 +16,15 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
   const [isParsed, setIsParsed] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showSteps, setShowSteps] = useState(true);
+  const [pasteText, setPasteText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleParse = () => {
+    if (!pasteText.trim()) return;
+    const parsed = parseMileIQData(pasteText, taxYear);
+    setEntries(parsed);
+    setIsParsed(true);
+  };
 
   const rate = IRS_MILEAGE_RATES[taxYear] || 0.7;
 
@@ -259,18 +267,18 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
         )}
       </div>
 
-      {/* Step 2: Upload */}
+      {/* Step 2: Upload or Paste */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
         <h3 className="text-base sm:text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
           <MapPin className="w-5 h-5" />
-          Step 2: Upload MileIQ CSV
+          Step 2: Upload or Paste MileIQ Data
         </h3>
 
         <div className="space-y-4">
           {/* Upload button */}
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center justify-center gap-2 w-full py-4 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
           >
             <Upload className="w-5 h-5" />
             Upload MileIQ File (CSV or JSON)
@@ -284,9 +292,30 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
             className="hidden"
           />
 
-          <p className="text-xs text-gray-400 text-center">
-            Accepts CSV or JSON format from MileIQ exports
-          </p>
+          {/* Or paste */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-sm text-gray-500">or paste MileIQ data</span>
+            </div>
+          </div>
+
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            placeholder="Paste your MileIQ CSV or report data here..."
+            className="w-full h-32 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1a365d] resize-y"
+          />
+
+          <button
+            onClick={handleParse}
+            disabled={!pasteText.trim()}
+            className="w-full py-2 bg-[#d69e2e] text-[#1a365d] rounded-lg font-bold hover:bg-[#c08d26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Parse & Preview
+          </button>
         </div>
       </div>
     </div>
