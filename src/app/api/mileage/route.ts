@@ -1,12 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { mileageLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { initializeDatabase } from "@/db/init";
 
-initializeDatabase();
-
 export async function GET(request: NextRequest) {
+  await initializeDatabase();
   const { searchParams } = new URL(request.url);
   const taxYear = parseInt(searchParams.get("year") || "2025");
 
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  await initializeDatabase();
   const { searchParams } = new URL(request.url);
   const id = parseInt(searchParams.get("id") || "0");
 

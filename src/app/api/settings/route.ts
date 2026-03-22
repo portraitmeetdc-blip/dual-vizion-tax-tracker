@@ -1,12 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { businessSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { initializeDatabase } from "@/db/init";
 
-initializeDatabase();
-
 export async function GET() {
+  await initializeDatabase();
   const results = await db.select().from(businessSettings).limit(1);
   if (results.length === 0) {
     return NextResponse.json({
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  await initializeDatabase();
   const body = await request.json();
   const existing = await db.select().from(businessSettings).limit(1);
 

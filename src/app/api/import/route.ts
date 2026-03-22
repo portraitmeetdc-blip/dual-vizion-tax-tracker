@@ -1,12 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { expenses, mileageLog } from "@/db/schema";
 import { initializeDatabase } from "@/db/init";
 import { IRS_MILEAGE_RATES } from "@/lib/constants";
 
-initializeDatabase();
-
 export async function POST(request: NextRequest) {
+  await initializeDatabase();
   const body = await request.json();
   const { type, items, taxYear } = body;
 
@@ -20,6 +21,25 @@ export async function POST(request: NextRequest) {
         date: item.date || null,
         amount: item.amount || 0,
         notes: item.notes || "Imported from Amazon",
+        isRecurring: false,
+        recurrenceType: null,
+        isCarriedForward: false,
+      });
+      count++;
+    }
+    return NextResponse.json({ success: true, imported: count });
+  }
+
+  if (type === "csv") {
+    let count = 0;
+    for (const item of items) {
+      await db.insert(expenses).values({
+        taxYear,
+        categoryId: item.categoryId,
+        description: item.description,
+        date: item.date || null,
+        amount: item.amount || 0,
+        notes: item.notes || "Imported from CSV",
         isRecurring: false,
         recurrenceType: null,
         isCarriedForward: false,

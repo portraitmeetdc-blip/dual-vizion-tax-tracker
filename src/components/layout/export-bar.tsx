@@ -81,9 +81,9 @@ export function ExportBar({ taxYear }: ExportBarProps) {
 
   return (
     <div className="flex items-center gap-2 mb-6 flex-wrap">
-      <span className="text-sm font-medium text-gray-600 mr-2">
+      <span className="text-sm font-medium text-gray-600 mr-1 sm:mr-2">
         <Download className="w-4 h-4 inline mr-1" />
-        Export:
+        <span className="hidden sm:inline">Export:</span>
       </span>
 
       <button

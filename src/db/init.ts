@@ -1,7 +1,16 @@
-import { sqlite } from "./index";
+import { client } from "./index";
+
+let initPromise: Promise<void> | null = null;
 
 export function initializeDatabase() {
-  sqlite.exec(`
+  if (!initPromise) {
+    initPromise = doInit();
+  }
+  return initPromise;
+}
+
+async function doInit() {
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ExpenseSection } from "@/components/expenses/expense-section";
 import { AmazonImporter } from "@/components/import/amazon-importer";
 import { MileIQImporter } from "@/components/import/mileiq-importer";
+import { CSVImporter } from "@/components/import/csv-importer";
 import { VoiceButton } from "@/components/voice/voice-button";
 import { ExportBar } from "@/components/layout/export-bar";
 import { formatCurrency } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { TAX_YEARS } from "@/lib/constants";
 import type { Expense, Category } from "@/db/schema";
 import type { AmazonItem } from "@/lib/csv-parsers/amazon-parser";
 import type { MileIQEntry } from "@/lib/csv-parsers/mileiq-parser";
+import type { GenericParsedRow } from "@/lib/csv-parsers/generic-parser";
 import {
   ChevronDown,
   ChevronUp,
@@ -20,9 +22,10 @@ import {
   Settings,
   RefreshCw,
   Camera,
+  TableProperties,
 } from "lucide-react";
 
-type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "schedule-c" | "settings";
+type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "import-csv" | "schedule-c" | "settings";
 
 export default function Dashboard() {
   const [taxYear, setTaxYear] = useState(2025);
@@ -143,6 +146,28 @@ export default function Dashboard() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "mileiq", taxYear, items: entries }),
+    });
+    if (res.ok) {
+      await fetchExpenses();
+      setViewMode("expenses");
+    }
+  };
+
+  const handleCSVImport = async (items: GenericParsedRow[]) => {
+    const res = await fetch("/api/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "csv",
+        taxYear,
+        items: items.map((item) => ({
+          categoryId: item.suggestedCategoryId,
+          description: item.description,
+          date: item.date,
+          amount: item.amount,
+          notes: item.notes || `CSV import`,
+        })),
+      }),
     });
     if (res.ok) {
       await fetchExpenses();
@@ -287,6 +312,7 @@ export default function Dashboard() {
             { key: "expenses", label: "Expenses", icon: FileSpreadsheet },
             { key: "import-amazon", label: "Amazon Import", icon: FileSpreadsheet },
             { key: "import-mileiq", label: "MileIQ Import", icon: MapPin },
+            { key: "import-csv", label: "CSV Import", icon: TableProperties },
             { key: "schedule-c", label: "Schedule C", icon: BarChart3 },
             { key: "settings", label: "Settings", icon: Settings },
           ].map(({ key, label, icon: Icon }) => (
@@ -300,28 +326,28 @@ export default function Dashboard() {
               }`}
             >
               <Icon className="w-4 h-4" />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* ===== EXPENSES VIEW ===== */}
         {viewMode === "expenses" && (
           <>
             {/* Grand Total + Actions */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-[#1a365d]">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#1a365d]">
                   {taxYear} Expenses
                 </h2>
                 <p className="text-sm text-gray-500">
                   {expenses.length} items across {categories.length} categories
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                 <button
                   onClick={() => setAllCollapsed(!allCollapsed)}
                   className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-[#1a365d] transition-colors"
@@ -335,15 +361,15 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={handleRollover}
-                  className="flex items-center gap-1 px-3 py-2 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
+                  className="hidden sm:flex items-center gap-1 px-3 py-2 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
                   title={`Copy recurring items to ${taxYear + 1}`}
                 >
                   <RefreshCw className="w-4 h-4" />
                   Rollover to {taxYear + 1}
                 </button>
-                <div className="bg-[#1a365d] text-white px-6 py-3 rounded-lg">
+                <div className="bg-[#1a365d] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg">
                   <div className="text-xs text-gray-300">Grand Total</div>
-                  <div className="text-xl font-bold text-[#d69e2e]">
+                  <div className="text-lg sm:text-xl font-bold text-[#d69e2e]">
                     {formatCurrency(grandTotal)}
                   </div>
                 </div>
@@ -398,6 +424,20 @@ export default function Dashboard() {
               Import MileIQ Data - {taxYear}
             </h2>
             <MileIQImporter taxYear={taxYear} onImport={handleMileIQImport} />
+          </div>
+        )}
+
+        {/* ===== CSV IMPORT VIEW ===== */}
+        {viewMode === "import-csv" && (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-[#1a365d] mb-6">
+              Import CSV / Spreadsheet Data - {taxYear}
+            </h2>
+            <CSVImporter
+              taxYear={taxYear}
+              categories={categories}
+              onImport={handleCSVImport}
+            />
           </div>
         )}
 
@@ -456,7 +496,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-[#1a365d] mb-4">
                   Business Information
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Business Name
@@ -486,7 +526,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-[#1a365d] mb-4">
                   Business-Use Percentages
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Phone Business Use %

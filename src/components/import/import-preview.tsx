@@ -36,15 +36,16 @@ export function ImportPreview({
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-[#1a365d]">{title}</h3>
-        <span className="text-sm text-gray-500">
-          {items.length} items | Total: {formatCurrency(total)}
+        <h3 className="text-base sm:text-lg font-semibold text-[#1a365d]">{title}</h3>
+        <span className="text-xs sm:text-sm text-gray-500">
+          {items.length} items | {formatCurrency(total)}
         </span>
       </div>
 
-      <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+      {/* Desktop table */}
+      <div className="hidden md:block border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 sticky top-0">
             <tr>
@@ -90,11 +91,45 @@ export function ImportPreview({
         </table>
       </div>
 
+      {/* Mobile card list */}
+      <div className="md:hidden max-h-96 overflow-y-auto space-y-2">
+        {items.map((item, idx) => (
+          <div key={idx} className="border rounded-lg p-3">
+            <div className="flex items-start justify-between mb-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{item.description}</p>
+                <p className="text-xs text-gray-500">{item.date || "No date"}</p>
+              </div>
+              <div className="flex items-center gap-2 ml-2 shrink-0">
+                <span className="text-sm font-bold">{formatCurrency(item.amount)}</span>
+                <button
+                  onClick={() => onRemove(idx)}
+                  className="text-red-400 active:text-red-600 p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <select
+              value={item.suggestedCategoryId}
+              onChange={(e) => onCategoryChange(idx, parseInt(e.target.value))}
+              className="w-full border rounded px-2 py-1.5 text-xs"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
       <div className="flex gap-3 mt-4">
         <button
           onClick={onConfirm}
           disabled={importing || items.length === 0}
-          className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
         >
           {importing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -105,7 +140,7 @@ export function ImportPreview({
         </button>
         <button
           onClick={onCancel}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          className="px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
         >
           Cancel
         </button>

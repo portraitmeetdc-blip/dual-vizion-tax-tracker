@@ -1,12 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { expenses } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { initializeDatabase } from "@/db/init";
 
-initializeDatabase();
-
 export async function POST(request: NextRequest) {
+  await initializeDatabase();
   const { fromYear, toYear } = await request.json();
 
   // Check if target year already has expenses
