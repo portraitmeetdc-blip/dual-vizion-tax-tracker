@@ -5,6 +5,7 @@ import { ExpenseSection } from "@/components/expenses/expense-section";
 import { AmazonImporter } from "@/components/import/amazon-importer";
 import { MileIQImporter } from "@/components/import/mileiq-importer";
 import { CSVImporter } from "@/components/import/csv-importer";
+import { ReceiptScanner } from "@/components/import/receipt-scanner";
 import { VoiceButton } from "@/components/voice/voice-button";
 import { ExportBar } from "@/components/layout/export-bar";
 import { formatCurrency } from "@/lib/utils";
@@ -22,10 +23,11 @@ import {
   Settings,
   RefreshCw,
   Camera,
+  ScanLine,
   TableProperties,
 } from "lucide-react";
 
-type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "import-csv" | "schedule-c" | "settings";
+type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "import-csv" | "scan-receipt" | "schedule-c" | "settings";
 
 export default function Dashboard() {
   const [taxYear, setTaxYear] = useState(2025);
@@ -313,6 +315,7 @@ export default function Dashboard() {
             { key: "import-amazon", label: "Amazon Import", icon: FileSpreadsheet },
             { key: "import-mileiq", label: "MileIQ Import", icon: MapPin },
             { key: "import-csv", label: "CSV Import", icon: TableProperties },
+            { key: "scan-receipt", label: "Scan Receipt", icon: ScanLine },
             { key: "schedule-c", label: "Schedule C", icon: BarChart3 },
             { key: "settings", label: "Settings", icon: Settings },
           ].map(({ key, label, icon: Icon }) => (
@@ -437,6 +440,30 @@ export default function Dashboard() {
               taxYear={taxYear}
               categories={categories}
               onImport={handleCSVImport}
+            />
+          </div>
+        )}
+
+        {/* ===== SCAN RECEIPT VIEW ===== */}
+        {viewMode === "scan-receipt" && (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#1a365d] mb-6">
+              Scan Receipt - {taxYear}
+            </h2>
+            <ReceiptScanner
+              taxYear={taxYear}
+              categories={categories}
+              onImport={async (items) => {
+                const res = await fetch("/api/import", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "csv", taxYear, items }),
+                });
+                if (res.ok) {
+                  await fetchExpenses();
+                  setViewMode("expenses");
+                }
+              }}
             />
           </div>
         )}
