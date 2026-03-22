@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, MapPin, X, Check, Loader2 } from "lucide-react";
+import { Upload, MapPin, X, Check, Loader2, ExternalLink, AlertCircle, ChevronDown, ChevronRight, Smartphone } from "lucide-react";
 import { parseMileIQCSV, type MileIQEntry } from "@/lib/csv-parsers/mileiq-parser";
 import { formatCurrency } from "@/lib/utils";
 import { IRS_MILEAGE_RATES } from "@/lib/constants";
@@ -15,6 +15,7 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
   const [entries, setEntries] = useState<MileIQEntry[]>([]);
   const [isParsed, setIsParsed] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showSteps, setShowSteps] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const rate = IRS_MILEAGE_RATES[taxYear] || 0.7;
@@ -50,10 +51,10 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
 
   if (isParsed && entries.length > 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[#1a365d]">MileIQ Import Preview</h3>
-          <div className="text-sm text-gray-500 space-x-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a365d]">MileIQ Import Preview</h3>
+          <div className="text-xs sm:text-sm text-gray-500 flex flex-wrap gap-2 sm:gap-4">
             <span>{entries.length} trips</span>
             <span>{totalMiles.toFixed(1)} miles</span>
             <span className="font-medium text-[#1a365d]">
@@ -66,7 +67,8 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
           IRS rate for {taxYear}: ${rate}/mile
         </div>
 
-        <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+        {/* Desktop table */}
+        <div className="hidden md:block border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
@@ -114,11 +116,40 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
           </table>
         </div>
 
+        {/* Mobile card list */}
+        <div className="md:hidden max-h-96 overflow-y-auto space-y-2">
+          {entries.map((entry, idx) => (
+            <div key={idx} className="border rounded-lg p-3">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{entry.date}</span>
+                    <span className="text-xs font-medium">{entry.miles.toFixed(1)} mi</span>
+                  </div>
+                  <p className="text-sm truncate mt-0.5">{entry.startLocation} → {entry.stopLocation}</p>
+                  {entry.purpose && (
+                    <p className="text-xs text-gray-400 truncate">{entry.purpose}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-2 shrink-0">
+                  <span className="text-sm font-bold text-[#1a365d]">{formatCurrency(entry.deductionAmount)}</span>
+                  <button
+                    onClick={() => handleRemove(idx)}
+                    className="text-red-400 active:text-red-600 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div className="flex gap-3 mt-4">
           <button
             onClick={handleImport}
             disabled={importing || entries.length === 0}
-            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
             {importing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -132,7 +163,7 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
               setIsParsed(false);
               setEntries([]);
             }}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            className="px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
           >
             Cancel
           </button>
@@ -142,53 +173,121 @@ export function MileIQImporter({ taxYear, onImport }: MileIQImporterProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
-        <MapPin className="w-5 h-5" />
-        MileIQ Import
-      </h3>
-
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Upload your MileIQ CSV export to import mileage data. The IRS standard mileage rate
-          for {taxYear} is <strong>${rate}/mile</strong>.
-        </p>
-
-        <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#1a365d] transition-colors cursor-pointer"
-          onClick={() => fileRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                const text = ev.target?.result as string;
-                const parsed = parseMileIQCSV(text, taxYear);
-                setEntries(parsed);
-                setIsParsed(true);
-              };
-              reader.readAsText(file);
-            }
-          }}
+    <div className="space-y-4">
+      {/* Step 1: Export from MileIQ */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <button
+          onClick={() => setShowSteps(!showSteps)}
+          className="w-full flex items-center justify-between text-left"
         >
-          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">
-            Click to upload or drag & drop your MileIQ CSV file
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a365d] flex items-center gap-2">
+            <Smartphone className="w-5 h-5" />
+            Step 1: Export from MileIQ App
+          </h3>
+          {showSteps ? (
+            <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+          )}
+        </button>
+
+        {showSteps && (
+          <div className="mt-4 space-y-4">
+            {/* Step-by-step instructions */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-[#1a365d]">On your phone, open the MileIQ app:</p>
+
+              <div className="space-y-2.5">
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">1</span>
+                  <p className="text-sm text-gray-700">Open the <strong>MileIQ app</strong> on your phone and tap the <strong>menu</strong> (three lines or gear icon).</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">2</span>
+                  <p className="text-sm text-gray-700">Tap <strong>&quot;Reports&quot;</strong> and then <strong>&quot;Create Report&quot;</strong> or <strong>&quot;New Report&quot;</strong>.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">3</span>
+                  <p className="text-sm text-gray-700">Set the date range to <strong>Jan 1, {taxYear}</strong> through <strong>Dec 31, {taxYear}</strong>. Filter for <strong>Business drives only</strong>.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#d69e2e] text-[#1a365d] text-xs font-bold shrink-0">4</span>
+                  <p className="text-sm text-gray-700">Tap <strong>&quot;Share&quot;</strong> or <strong>&quot;Export&quot;</strong> and choose <strong>&quot;CSV&quot;</strong> format. Either save to <strong>Files</strong> or <strong>email it to yourself</strong>.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold shrink-0">5</span>
+                  <p className="text-sm text-gray-700">Upload the CSV file in <strong>Step 2</strong> below. You can do this right from your phone.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* MileIQ web dashboard link */}
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                <div className="text-xs text-blue-700">
+                  <p className="font-medium mb-1">Prefer using a computer?</p>
+                  <p className="mb-2">You can also export from the MileIQ web dashboard:</p>
+                  <a
+                    href="https://dashboard.mileiq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-800 font-medium underline hover:text-blue-900"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Open MileIQ Dashboard
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* IRS rate info */}
+            <div className="p-3 bg-amber-50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs text-amber-800">
+                  <p className="font-medium mb-1">IRS Standard Mileage Rate for {taxYear}</p>
+                  <p>The current rate is <strong>${rate}/mile</strong>. The app automatically calculates your deduction using this rate, plus any parking and tolls from your MileIQ data.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Step 2: Upload */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
+          <MapPin className="w-5 h-5" />
+          Step 2: Upload MileIQ CSV
+        </h3>
+
+        <div className="space-y-4">
+          {/* Upload button */}
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="flex items-center justify-center gap-2 w-full py-4 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
+          >
+            <Upload className="w-5 h-5" />
+            Upload MileIQ CSV File
+          </button>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+
+          <p className="text-xs text-gray-400 text-center">
             Expected columns: Date, Start, Stop, Miles, Parking, Tolls, Purpose
           </p>
         </div>
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
       </div>
     </div>
   );
