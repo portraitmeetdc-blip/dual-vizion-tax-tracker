@@ -31,7 +31,7 @@ export function ExpenseSection({
   onUpdate,
   onDelete,
 }: ExpenseSectionProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(expenses.length <= 20);
   const [isAdding, setIsAdding] = useState(false);
   const [rapidMode, setRapidMode] = useState(false);
   const [newDesc, setNewDesc] = useState("");
@@ -121,6 +121,11 @@ export function ExpenseSection({
         </div>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0 ml-2">
           <span className="text-xs sm:text-sm text-gray-300 hidden lg:inline">{category.turbotaxSection}</span>
+          {expenses.length > 0 && (
+            <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded">
+              {expenses.length}
+            </span>
+          )}
           <span className="font-bold text-sm sm:text-lg text-[#d69e2e]">
             {formatCurrency(total)}
           </span>
