@@ -95,7 +95,7 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
     setParsedItems(parsedItems.filter((_, i) => i !== index));
   };
 
-  const amazonBusinessReportsUrl = `https://www.amazon.com/gp/b2b/reports`;
+  const amazonBusinessReportsUrl = `https://www.amazon.com/gp/your-account/order-history/download-order-reports`;
   const amazonDataRequestUrl = `https://www.amazon.com/hz/privacy-central/data-requests/preview.html`;
   const amazonOrderHistoryUrl = `https://www.amazon.com/your-orders/orders?timeFilter=year-${taxYear}`;
 
