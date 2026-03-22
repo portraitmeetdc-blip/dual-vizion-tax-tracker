@@ -95,7 +95,7 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
     setParsedItems(parsedItems.filter((_, i) => i !== index));
   };
 
-  const amazonBusinessReportsUrl = `https://www.amazon.com/b2b/aba/reports?reportType=items_report_1`;
+  const amazonBusinessReportsUrl = `https://www.amazon.com/b2b/aba/reports?reportType=items_report_1&dateSpanSelection=MONTH_TO_DATE&ref=ab_ppx_hpr_redirect_report`;
   const amazonDataRequestUrl = `https://www.amazon.com/hz/privacy-central/data-requests/preview.html`;
   const amazonOrderHistoryUrl = `https://www.amazon.com/your-orders/orders?timeFilter=year-${taxYear}`;
 
@@ -183,32 +183,22 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
 
             {/* Step-by-step instructions */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <p className="text-sm font-medium text-[#1a365d]">Download your {taxYear} order history:</p>
+              <p className="text-sm font-medium text-[#1a365d]">Once on Amazon, just 3 clicks:</p>
 
               <div className="space-y-2.5">
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">1</span>
-                  <p className="text-sm text-gray-700">Click the button above to open <strong>Business Analytics</strong>. You&apos;ll land on the <strong>Orders report</strong> page.</p>
+                  <p className="text-sm text-gray-700">Change the <strong>&quot;Order Date&quot;</strong> dropdown from &quot;Month to date&quot; to cover <strong>01/01/{taxYear} – 12/31/{taxYear}</strong>.</p>
                 </div>
 
                 <div className="flex gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">2</span>
-                  <p className="text-sm text-gray-700">Change the <strong>&quot;Order Date&quot;</strong> dropdown from &quot;Month to date&quot; to a custom range covering <strong>01/01/{taxYear}</strong> through <strong>12/31/{taxYear}</strong>.</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">3</span>
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#d69e2e] text-[#1a365d] text-xs font-bold shrink-0">2</span>
                   <p className="text-sm text-gray-700">Click the orange <strong>&quot;Generate report&quot;</strong> button.</p>
                 </div>
 
                 <div className="flex gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">4</span>
-                  <p className="text-sm text-gray-700">Once the report loads, click <strong>&quot;Download order documents&quot;</strong> to save the CSV file.</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">5</span>
-                  <p className="text-sm text-gray-700">Upload that CSV file in <strong>Step 2</strong> below. All items will be imported with their dates and costs.</p>
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold shrink-0">3</span>
+                  <p className="text-sm text-gray-700">Click <strong>&quot;Download order documents&quot;</strong> to save the CSV, then upload it in Step 2 below.</p>
                 </div>
               </div>
             </div>
