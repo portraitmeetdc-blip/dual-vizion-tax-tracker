@@ -95,6 +95,7 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
     setParsedItems(parsedItems.filter((_, i) => i !== index));
   };
 
+  const amazonBusinessReportsUrl = `https://www.amazon.com/gp/b2b/reports`;
   const amazonDataRequestUrl = `https://www.amazon.com/hz/privacy-central/data-requests/preview.html`;
   const amazonOrderHistoryUrl = `https://www.amazon.com/your-orders/orders?timeFilter=year-${taxYear}`;
 
@@ -169,45 +170,45 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
 
         {showSteps && (
           <div className="mt-4 space-y-4">
-            {/* Primary: Request Your Data */}
+            {/* Primary: Amazon Business Order Reports */}
             <a
-              href={amazonDataRequestUrl}
+              href={amazonBusinessReportsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3 bg-[#FF9900] text-[#111] rounded-lg font-bold text-sm hover:bg-[#e88b00] transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
-              Download Your Amazon Data
+              Open Amazon Business Order Reports
             </a>
 
             {/* Step-by-step instructions */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <p className="text-sm font-medium text-[#1a365d]">How to get your Amazon order history CSV:</p>
+              <p className="text-sm font-medium text-[#1a365d]">Download your {taxYear} order history:</p>
 
               <div className="space-y-2.5">
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">1</span>
-                  <p className="text-sm text-gray-700">Click <strong>&quot;Download Your Amazon Data&quot;</strong> above. Sign in to Amazon if prompted.</p>
+                  <p className="text-sm text-gray-700">Click the button above to open <strong>Amazon Business Order Reports</strong>. Sign in if prompted.</p>
                 </div>
 
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">2</span>
-                  <p className="text-sm text-gray-700">On the &quot;Request Your Data&quot; page, select the category <strong>&quot;Your Orders&quot;</strong> from the dropdown.</p>
+                  <p className="text-sm text-gray-700">Set the <strong>Start Date</strong> to <strong>01/01/{taxYear}</strong> and <strong>End Date</strong> to <strong>12/31/{taxYear}</strong>.</p>
                 </div>
 
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">3</span>
-                  <p className="text-sm text-gray-700">Click <strong>&quot;Submit Request&quot;</strong>. Amazon will prepare your data and send you an email when it&apos;s ready (usually within 1-3 days).</p>
+                  <p className="text-sm text-gray-700">Select <strong>&quot;Items&quot;</strong> as the report type, then click <strong>&quot;Request Report&quot;</strong>.</p>
                 </div>
 
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">4</span>
-                  <p className="text-sm text-gray-700">When you receive the email, click the download link. You&apos;ll get a zip file containing CSV files with your order history.</p>
+                  <p className="text-sm text-gray-700">Wait for the report to generate (usually just a few minutes). Refresh the page if needed.</p>
                 </div>
 
                 <div className="flex gap-3">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">5</span>
-                  <p className="text-sm text-gray-700">Unzip the file and look for the <strong>&quot;Retail.OrderHistory&quot;</strong> CSV. Upload that file below.</p>
+                  <p className="text-sm text-gray-700">Click <strong>&quot;Download&quot;</strong> to save the CSV file, then upload it in Step 2 below.</p>
                 </div>
               </div>
             </div>
@@ -218,7 +219,7 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
                 <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                 <div className="text-xs text-blue-700">
                   <p className="font-medium mb-1">Quick Reference: View {taxYear} Orders</p>
-                  <p className="mb-2">While waiting for your data export, you can review your {taxYear} orders directly on Amazon:</p>
+                  <p className="mb-2">Browse your {taxYear} orders on Amazon while the report generates:</p>
                   <a
                     href={amazonOrderHistoryUrl}
                     target="_blank"
@@ -226,19 +227,28 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
                     className="inline-flex items-center gap-1 text-blue-800 font-medium underline hover:text-blue-900"
                   >
                     <ExternalLink className="w-3 h-3" />
-                    View {taxYear} Order History on Amazon
+                    View {taxYear} Order History
                   </a>
                 </div>
               </div>
             </div>
 
-            {/* Amazon Business note */}
+            {/* Fallback: Request Your Data */}
             <div className="p-3 bg-amber-50 rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
                 <div className="text-xs text-amber-800">
-                  <p className="font-medium mb-1">Have an Amazon Business account?</p>
-                  <p>Go to <strong>Business Order History</strong> &gt; <strong>Download Order Reports</strong> for instant CSV downloads filtered by date range. This is faster than &quot;Request Your Data&quot;.</p>
+                  <p className="font-medium mb-1">Alternative: Request Your Data</p>
+                  <p className="mb-2">If Business Order Reports aren&apos;t loading, you can use Amazon&apos;s data export instead (takes 1-3 days):</p>
+                  <a
+                    href={amazonDataRequestUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-amber-900 font-medium underline hover:text-amber-950"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Request Your Data &gt; Your Orders
+                  </a>
                 </div>
               </div>
             </div>
