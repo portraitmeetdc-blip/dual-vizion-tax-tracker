@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, ExternalLink, ChevronDown, ChevronRight, ShoppingCart } from "lucide-react";
 import { parseAmazonCSV, type AmazonItem } from "@/lib/csv-parsers/amazon-parser";
 import { ImportPreview } from "./import-preview";
 import type { Category } from "@/db/schema";
@@ -17,6 +17,7 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
   const [parsedItems, setParsedItems] = useState<AmazonItem[]>([]);
   const [isParsed, setIsParsed] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showSteps, setShowSteps] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleParse = () => {
@@ -66,6 +67,8 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
     setParsedItems(parsedItems.filter((_, i) => i !== index));
   };
 
+  const amazonOrderHistoryUrl = `https://www.amazon.com/gp/b2b/reports`;
+
   if (isParsed && parsedItems.length > 0) {
     return (
       <ImportPreview
@@ -85,35 +88,98 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
-        <FileText className="w-5 h-5" />
-        Amazon Purchase Import
-      </h3>
+    <div className="space-y-4">
+      {/* Step 1: Download from Amazon */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <button
+          onClick={() => setShowSteps(!showSteps)}
+          className="w-full flex items-center justify-between text-left"
+        >
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a365d] flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5" />
+            Step 1: Download Your Amazon Order History
+          </h3>
+          {showSteps ? (
+            <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+          )}
+        </button>
 
-      <div className="space-y-4">
-        {/* Paste Area */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Paste your Amazon order CSV data:
-          </label>
-          <textarea
-            value={csvText}
-            onChange={(e) => setCsvText(e.target.value)}
-            placeholder={`Date, Description, Amount, Category\n01/15/2024, USB-C Cable, 12.99, Supplies\n02/01/2024, External Hard Drive 4TB, 119.99, Office`}
-            className="w-full h-40 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1a365d] resize-y"
-          />
-        </div>
+        {showSteps && (
+          <div className="mt-4 space-y-4">
+            {/* Download Button */}
+            <a
+              href={amazonOrderHistoryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-[#FF9900] text-[#111] rounded-lg font-bold text-sm hover:bg-[#e88b00] transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Amazon Order Reports for {taxYear}
+            </a>
 
-        {/* File Upload */}
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">OR</span>
+            {/* Step-by-step instructions */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-[#1a365d]">Follow these steps on Amazon:</p>
+
+              <div className="space-y-2.5">
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">1</span>
+                  <p className="text-sm text-gray-700">Click the button above to open <strong>Amazon Order Reports</strong>. Sign in if prompted.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">2</span>
+                  <p className="text-sm text-gray-700">Under <strong>&quot;Request Order History Report&quot;</strong>, set the <strong>Start Date</strong> to <strong>01/01/{taxYear}</strong> and <strong>End Date</strong> to <strong>12/31/{taxYear}</strong>.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">3</span>
+                  <p className="text-sm text-gray-700">Select <strong>&quot;Items&quot;</strong> as the report type, then click <strong>&quot;Request Report&quot;</strong>.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">4</span>
+                  <p className="text-sm text-gray-700">Wait for the report to generate (usually a few minutes). Refresh the page if needed.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1a365d] text-white text-xs font-bold shrink-0">5</span>
+                  <p className="text-sm text-gray-700">Once ready, click <strong>&quot;Download&quot;</strong> to save the CSV file, then upload it below.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Alternative method */}
+            <div className="p-3 bg-amber-50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs text-amber-800">
+                  <p className="font-medium mb-1">Alternative: Request Your Data</p>
+                  <p>If Order Reports isn&apos;t available, go to <strong>Amazon &gt; Account &gt; Request Your Data</strong>, select <strong>&quot;Your Orders&quot;</strong>, and submit. Amazon will email you a download link within a few days.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Step 2: Upload & Import */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Step 2: Upload & Import
+        </h3>
+
+        <div className="space-y-4">
+          {/* File Upload (primary action) */}
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-[#1a365d] text-white rounded-lg text-sm font-medium hover:bg-[#162d4e] transition-colors"
           >
             <Upload className="w-4 h-4" />
-            Upload CSV File
+            Upload Amazon CSV File
           </button>
           <input
             ref={fileRef}
@@ -122,28 +188,65 @@ export function AmazonImporter({ taxYear, categories, onImport }: AmazonImporter
             onChange={handleFileUpload}
             className="hidden"
           />
-        </div>
 
-        {/* Parse Button */}
-        <button
-          onClick={handleParse}
-          disabled={!csvText.trim()}
-          className="w-full py-2 bg-[#1a365d] text-white rounded-lg font-medium hover:bg-[#162d4e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Parse & Preview
-        </button>
-
-        {/* Supported Categories */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-            <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">Auto-categorization keywords:</p>
-              <p>lens, camera → Assets | cable, battery, filter → Supplies | hard drive, keyboard → Office Supplies | software → Miscellaneous</p>
-              <p className="mt-1">Items over $500 are automatically categorized as Assets (Section 179).</p>
+          {/* Or paste */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-sm text-gray-500">or paste CSV data</span>
             </div>
           </div>
+
+          <textarea
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={`Paste your Amazon order CSV data here...\n\nExpected columns: Date, Title/Description, Amount/Total`}
+            className="w-full h-32 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1a365d] resize-y"
+          />
+
+          {/* Parse Button */}
+          <button
+            onClick={handleParse}
+            disabled={!csvText.trim()}
+            className="w-full py-2 bg-[#d69e2e] text-[#1a365d] rounded-lg font-bold hover:bg-[#c08d26] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Parse & Preview
+          </button>
         </div>
+      </div>
+
+      {/* Auto-categorization info */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h3 className="text-sm font-semibold text-[#1a365d] mb-3">Auto-Categorization</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
+          <div className="flex items-start gap-2">
+            <span className="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-medium shrink-0">Assets</span>
+            <span>lens, camera, gimbal, drone, laptop, strobe, or any item over $500</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium shrink-0">Supplies</span>
+            <span>cables, batteries, memory cards, bags, cases, cleaning kits, gaffer tape</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-medium shrink-0">Office</span>
+            <span>hard drives, monitors, keyboards, tripods, lights, backdrops, printer ink, frames</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-medium shrink-0">Software</span>
+            <span>subscriptions, licenses, presets, plugins, LUTs, Adobe, Lightroom</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium shrink-0">Professional</span>
+            <span>books, courses, tutorials, workshops, education, training</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium shrink-0">Repairs</span>
+            <span>repair parts, replacement parts, calibration tools</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">You can reassign categories for any item in the preview before importing.</p>
       </div>
     </div>
   );
