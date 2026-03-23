@@ -49,6 +49,15 @@ export function ExpenseSection({
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
+  // Calculate total miles for mileage categories (extract from notes like "21.5 mi @ $0.70/mi")
+  const isMileageCategory = category.scheduleCLine.includes("Line 9");
+  const totalMiles = isMileageCategory
+    ? expenses.reduce((sum, e) => {
+        const match = (e.notes || "").match(/([\d.]+)\s*mi\s/);
+        return sum + (match ? parseFloat(match[1]) : 0);
+      }, 0)
+    : 0;
+
   // Focus the description input when add row opens (including after rapid-mode save)
   useEffect(() => {
     if (isAdding && descInputRef.current) {
@@ -132,6 +141,11 @@ export function ExpenseSection({
           {expenses.length > 0 && (
             <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded">
               {expenses.length}
+            </span>
+          )}
+          {isMileageCategory && totalMiles > 0 && (
+            <span className="text-xs sm:text-sm text-gray-300">
+              {totalMiles.toFixed(1)} mi
             </span>
           )}
           <span className="font-bold text-sm sm:text-lg text-[#d69e2e]">
