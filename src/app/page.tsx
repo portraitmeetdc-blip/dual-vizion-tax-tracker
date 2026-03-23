@@ -91,12 +91,12 @@ export default function Dashboard() {
     }
   };
 
-  const fetchExpenses = useCallback(async () => {
-    setLoading(true);
+  const fetchExpenses = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await fetch(`/api/expenses?year=${taxYear}`);
     const data = await res.json();
     setExpenses(data);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [taxYear]);
 
   const fetchCategories = useCallback(async () => {
@@ -157,7 +157,7 @@ export default function Dashboard() {
       body: JSON.stringify({ ...expense, taxYear }),
     });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       return true;
     }
     return false;
@@ -170,7 +170,7 @@ export default function Dashboard() {
       body: JSON.stringify(expense),
     });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       return true;
     }
     return false;
@@ -179,7 +179,7 @@ export default function Dashboard() {
   const handleDeleteExpense = async (id: number) => {
     const res = await fetch(`/api/expenses?id=${id}`, { method: "DELETE" });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       return true;
     }
     return false;
@@ -202,7 +202,7 @@ export default function Dashboard() {
       }),
     });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       setViewMode("expenses");
     }
   };
@@ -214,7 +214,7 @@ export default function Dashboard() {
       body: JSON.stringify({ type: "mileiq", taxYear, items: entries }),
     });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       setViewMode("expenses");
     }
   };
@@ -236,7 +236,7 @@ export default function Dashboard() {
       }),
     });
     if (res.ok) {
-      await fetchExpenses();
+      await fetchExpenses(true);
       setViewMode("expenses");
     }
   };
@@ -926,7 +926,7 @@ export default function Dashboard() {
                   body: JSON.stringify({ type: "csv", taxYear, items }),
                 });
                 if (res.ok) {
-                  await fetchExpenses();
+                  await fetchExpenses(true);
                   setViewMode("expenses");
                 }
               }}
