@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronRight, Plus, Zap } from "lucide-react";
 import { ExpenseRow } from "./expense-row";
 import { formatCurrency } from "@/lib/utils";
+import { CATEGORY_GROUPS } from "@/lib/constants";
 import type { Expense, Category } from "@/db/schema";
 
 interface ExpenseSectionProps {
@@ -19,6 +20,7 @@ interface ExpenseSectionProps {
     notes?: string;
     isRecurring?: boolean;
     recurrenceType?: string;
+    groupName?: string;
   }) => Promise<boolean>;
   onUpdate: (expense: Partial<Expense> & { id: number }) => Promise<boolean>;
   onDelete: (id: number) => Promise<boolean>;
@@ -40,7 +42,10 @@ export function ExpenseSection({
   const [newDate, setNewDate] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newNotes, setNewNotes] = useState("");
+  const [newGroup, setNewGroup] = useState("");
   const descInputRef = useRef<HTMLInputElement>(null);
+
+  const groups = CATEGORY_GROUPS[category.id] || [];
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -59,6 +64,7 @@ export function ExpenseSection({
       date: newDate || undefined,
       amount: parseFloat(newAmount) || 0,
       notes: newNotes || undefined,
+      groupName: newGroup || undefined,
     });
     if (success) {
       setNewDesc("");
@@ -153,16 +159,70 @@ export function ExpenseSection({
             </div>
           )}
 
-          {expenses.map((expense) => (
-            <ExpenseRow
-              key={expense.id}
-              expense={expense}
-              categories={allCategories}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              onDuplicate={handleDuplicate}
-            />
-          ))}
+          {groups.length > 0 ? (
+            // Grouped display
+            <>
+              {groups.map((group) => {
+                const groupExpenses = expenses.filter((e) => e.groupName === group);
+                if (groupExpenses.length === 0) return null;
+                const groupTotal = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
+                return (
+                  <div key={group}>
+                    <div className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">{group}</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{formatCurrency(groupTotal)}</span>
+                    </div>
+                    {groupExpenses.map((expense) => (
+                      <ExpenseRow
+                        key={expense.id}
+                        expense={expense}
+                        categories={allCategories}
+                        onUpdate={onUpdate}
+                        onDelete={onDelete}
+                        onDuplicate={handleDuplicate}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+              {/* Ungrouped items */}
+              {(() => {
+                const ungrouped = expenses.filter((e) => !e.groupName || !groups.includes(e.groupName));
+                if (ungrouped.length === 0) return null;
+                const ungroupedTotal = ungrouped.reduce((sum, e) => sum + e.amount, 0);
+                return (
+                  <div>
+                    <div className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Uncategorized</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{formatCurrency(ungroupedTotal)}</span>
+                    </div>
+                    {ungrouped.map((expense) => (
+                      <ExpenseRow
+                        key={expense.id}
+                        expense={expense}
+                        categories={allCategories}
+                        onUpdate={onUpdate}
+                        onDelete={onDelete}
+                        onDuplicate={handleDuplicate}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
+            </>
+          ) : (
+            // Flat display (no groups)
+            expenses.map((expense) => (
+              <ExpenseRow
+                key={expense.id}
+                expense={expense}
+                categories={allCategories}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onDuplicate={handleDuplicate}
+              />
+            ))
+          )}
 
           {/* Add New Row */}
           {isAdding && (
@@ -221,6 +281,22 @@ export function ExpenseSection({
                   <button onClick={handleCancelAdd} className="text-gray-400 hover:text-gray-600 text-sm" title="Cancel">✕</button>
                 </div>
               </div>
+              {/* Desktop group selector */}
+              {groups.length > 0 && (
+                <div className={`hidden md:flex items-center gap-2 px-4 py-1 border-b ${rapidMode ? "bg-amber-50 border-l-4 border-l-[#d69e2e]" : "bg-blue-50"}`}>
+                  <label className="text-xs text-gray-500 shrink-0">Group:</label>
+                  <select
+                    value={newGroup}
+                    onChange={(e) => setNewGroup(e.target.value)}
+                    className="border rounded px-2 py-1 text-xs flex-1 max-w-xs"
+                  >
+                    <option value="">-- Select Group --</option>
+                    {groups.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Mobile add form */}
               <div className={`md:hidden px-4 py-3 border-b space-y-2 ${
@@ -258,6 +334,18 @@ export function ExpenseSection({
                   onChange={(e) => setNewNotes(e.target.value)}
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
                 />
+                {groups.length > 0 && (
+                  <select
+                    value={newGroup}
+                    onChange={(e) => setNewGroup(e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+                  >
+                    <option value="">-- Select Group --</option>
+                    {groups.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={handleAdd}

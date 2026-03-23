@@ -17,3 +17,9 @@ export const SECTION_179_LIMITS: Record<number, number> = {
 export const ASSET_THRESHOLD = 500; // Items > $500 go to Assets/Depreciation
 
 export const TAX_YEARS = [2023, 2024, 2025, 2026];
+
+// Sub-groups for categories (categoryId -> group names)
+export const CATEGORY_GROUPS: Record<number, string[]> = {
+  15: ["Lighting", "Camera Equipment", "Video Equipment", "Storage", "Accessories", "General Office Supplies"],
+  // Add more categories here as needed
+};

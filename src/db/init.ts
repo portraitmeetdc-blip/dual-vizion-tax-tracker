@@ -60,4 +60,11 @@ async function doInit() {
     CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id);
     CREATE INDEX IF NOT EXISTS idx_mileage_year ON mileage_log(tax_year);
   `);
+
+  // Add group_name column if it doesn't exist (migration)
+  try {
+    await client.execute("ALTER TABLE expenses ADD COLUMN group_name TEXT");
+  } catch {
+    // Column already exists, ignore
+  }
 }

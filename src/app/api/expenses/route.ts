@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     notes: body.notes || null,
     isRecurring: body.isRecurring || false,
     recurrenceType: body.recurrenceType || null,
+    groupName: body.groupName || null,
     isCarriedForward: false,
   }).returning();
 
@@ -51,6 +52,7 @@ export async function PUT(request: NextRequest) {
       isRecurring: body.isRecurring,
       recurrenceType: body.recurrenceType,
       categoryId: body.categoryId,
+      groupName: body.groupName,
     })
     .where(eq(expenses.id, body.id))
     .returning();

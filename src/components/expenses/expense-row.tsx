@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, RefreshCw, Copy, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { CATEGORY_GROUPS } from "@/lib/constants";
 import type { Expense, Category } from "@/db/schema";
 
 interface ExpenseRowProps {
@@ -20,6 +21,7 @@ export function ExpenseRow({ expense, categories, onUpdate, onDelete, onDuplicat
   const [editAmount, setEditAmount] = useState(String(expense.amount));
   const [editNotes, setEditNotes] = useState(expense.notes || "");
   const [editCategoryId, setEditCategoryId] = useState(expense.categoryId);
+  const [editGroup, setEditGroup] = useState(expense.groupName || "");
 
   const handleSave = async () => {
     await onUpdate({
@@ -29,6 +31,7 @@ export function ExpenseRow({ expense, categories, onUpdate, onDelete, onDuplicat
       amount: parseFloat(editAmount) || 0,
       notes: editNotes || null,
       categoryId: editCategoryId,
+      groupName: editGroup || null,
     });
     setIsEditing(false);
   };
@@ -87,12 +90,12 @@ export function ExpenseRow({ expense, categories, onUpdate, onDelete, onDuplicat
               ✓
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <label className="text-xs text-gray-500 shrink-0">Move to:</label>
             <select
               value={editCategoryId}
               onChange={(e) => setEditCategoryId(parseInt(e.target.value))}
-              className="border rounded px-2 py-1 text-xs flex-1 max-w-xs focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+              className="border rounded px-2 py-1 text-xs max-w-[200px] focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
             >
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
@@ -100,6 +103,21 @@ export function ExpenseRow({ expense, categories, onUpdate, onDelete, onDuplicat
                 </option>
               ))}
             </select>
+            {(CATEGORY_GROUPS[editCategoryId] || []).length > 0 && (
+              <>
+                <label className="text-xs text-gray-500 shrink-0">Group:</label>
+                <select
+                  value={editGroup}
+                  onChange={(e) => setEditGroup(e.target.value)}
+                  className="border rounded px-2 py-1 text-xs max-w-[180px] focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+                >
+                  <option value="">-- No Group --</option>
+                  {(CATEGORY_GROUPS[editCategoryId] || []).map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </>
+            )}
             <button
               onClick={() => setIsEditing(false)}
               className="text-xs text-gray-400 hover:text-gray-600 ml-auto"

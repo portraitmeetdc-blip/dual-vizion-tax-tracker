@@ -22,6 +22,7 @@ export const expenses = sqliteTable("expenses", {
     .notNull()
     .default(false),
   recurrenceType: text("recurrence_type"), // 'monthly' | 'yearly'
+  groupName: text("group_name"), // sub-group within a category (e.g. "Lighting", "Camera Equipment")
   isCarriedForward: integer("is_carried_forward", { mode: "boolean" })
     .notNull()
     .default(false),
