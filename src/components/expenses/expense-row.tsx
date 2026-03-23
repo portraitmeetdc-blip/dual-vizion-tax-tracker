@@ -38,7 +38,7 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
     return (
       <>
         {/* Desktop edit */}
-        <div className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_70px] gap-2 px-4 py-2 border-b bg-yellow-50">
+        <div className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2 px-4 py-2 border-b bg-yellow-50">
           <input
             type="text"
             value={editDesc}
@@ -150,7 +150,7 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
     <>
       {/* Desktop row */}
       <div
-        className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_70px] gap-2 px-4 py-2 border-b hover:bg-gray-50 cursor-pointer group"
+        className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2 px-4 py-2 border-b hover:bg-gray-50 cursor-pointer group"
         onDoubleClick={() => setIsEditing(true)}
       >
         <span className="text-sm flex items-center gap-1">
@@ -171,17 +171,24 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
         </span>
         <span className="text-sm font-medium">{formatCurrency(expense.amount)}</span>
         <span className="text-sm text-gray-500 truncate">{expense.notes || ""}</span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-gray-400 hover:text-blue-600"
+            title="Edit"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
           <button
             onClick={() => onDuplicate(expense)}
-            className="text-blue-400 hover:text-blue-600"
+            className="text-gray-400 hover:text-blue-600"
             title="Duplicate"
           >
             <Copy className="w-4 h-4" />
           </button>
           <button
             onClick={handleDelete}
-            className="text-red-400 hover:text-red-600"
+            className="text-gray-400 hover:text-red-600"
             title="Delete"
           >
             <X className="w-4 h-4" />

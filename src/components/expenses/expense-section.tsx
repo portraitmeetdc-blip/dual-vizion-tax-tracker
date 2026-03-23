@@ -136,7 +136,7 @@ export function ExpenseSection({
       {isOpen && (
         <div className="p-0">
           {/* Table Header (desktop only) */}
-          <div className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_70px] gap-2 px-4 py-2 bg-gray-50 border-b text-sm font-medium text-gray-600">
+          <div className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2 px-4 py-2 bg-gray-50 border-b text-sm font-medium text-gray-600">
             <span>Description</span>
             <span>Date</span>
             <span>Amount</span>
@@ -165,7 +165,7 @@ export function ExpenseSection({
           {isAdding && (
             <>
               {/* Desktop add row */}
-              <div className={`hidden md:grid grid-cols-[1fr_120px_120px_1fr_70px] gap-2 px-4 py-2 border-b ${
+              <div className={`hidden md:grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2 px-4 py-2 border-b ${
                 rapidMode ? "bg-amber-50 border-l-4 border-l-[#d69e2e]" : "bg-blue-50"
               }`}>
                 <input
