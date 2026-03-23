@@ -32,9 +32,10 @@ import {
   Download,
   TrendingUp,
   AlertTriangle,
+  Repeat,
 } from "lucide-react";
 
-type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "import-csv" | "scan-receipt" | "dashboard" | "schedule-c" | "settings";
+type ViewMode = "expenses" | "import-amazon" | "import-mileiq" | "import-csv" | "scan-receipt" | "dashboard" | "subscriptions" | "schedule-c" | "settings";
 
 export default function Dashboard() {
   const [taxYear, setTaxYear] = useState(2025);
@@ -70,6 +71,17 @@ export default function Dashboard() {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const globalSearchRef = useRef<HTMLInputElement>(null);
+
+  // Subscription Tracker
+  interface Subscription {
+    description: string;
+    categoryId: number;
+    categoryName: string;
+    recurrenceType: string;
+    years: Record<number, { amount: number; id: number }>;
+  }
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subSearch, setSubSearch] = useState("");
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -605,6 +617,7 @@ export default function Dashboard() {
             { key: "import-mileiq", label: "MileIQ Import", icon: MapPin },
             { key: "import-csv", label: "CSV Import", icon: TableProperties },
             { key: "scan-receipt", label: "Scan Receipt", icon: ScanLine },
+            { key: "subscriptions", label: "Subscriptions", icon: Repeat },
             { key: "schedule-c", label: "Schedule C", icon: BarChart3 },
             { key: "settings", label: "Settings", icon: Settings },
           ].map(({ key, label, icon: Icon }) => (
@@ -934,6 +947,22 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ===== SUBSCRIPTIONS VIEW ===== */}
+        {viewMode === "subscriptions" && (
+          <SubscriptionsView
+            taxYear={taxYear}
+            subscriptions={subscriptions}
+            subSearch={subSearch}
+            setSubSearch={setSubSearch}
+            onRefresh={async () => {
+              const res = await fetch("/api/subscriptions");
+              const data = await res.json();
+              setSubscriptions(data);
+            }}
+            formatCurrency={formatCurrency}
+          />
+        )}
+
         {/* ===== SCHEDULE C PREVIEW ===== */}
         {viewMode === "schedule-c" && (
           <div className="max-w-5xl mx-auto">
@@ -1181,6 +1210,205 @@ export default function Dashboard() {
           return success;
         }}
       />
+    </div>
+  );
+}
+
+// Subscriptions View Component
+function SubscriptionsView({
+  taxYear,
+  subscriptions,
+  subSearch,
+  setSubSearch,
+  onRefresh,
+  formatCurrency,
+}: {
+  taxYear: number;
+  subscriptions: { description: string; categoryId: number; categoryName: string; recurrenceType: string; years: Record<number, { amount: number; id: number }> }[];
+  subSearch: string;
+  setSubSearch: (s: string) => void;
+  onRefresh: () => Promise<void>;
+  formatCurrency: (n: number) => string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!loaded) {
+      onRefresh().then(() => setLoaded(true));
+    }
+  }, [loaded, onRefresh]);
+
+  const years = [taxYear - 2, taxYear - 1, taxYear];
+
+  const filtered = subscriptions.filter((sub) => {
+    if (!subSearch) return true;
+    const q = subSearch.toLowerCase();
+    return sub.description.toLowerCase().includes(q) || sub.categoryName.toLowerCase().includes(q);
+  });
+
+  const totalCurrent = filtered.reduce((sum, sub) => sum + (sub.years[taxYear]?.amount || 0), 0);
+  const totalPrev = filtered.reduce((sum, sub) => sum + (sub.years[taxYear - 1]?.amount || 0), 0);
+  const priceIncreases = filtered.filter((sub) => {
+    const curr = sub.years[taxYear]?.amount || 0;
+    const prev = sub.years[taxYear - 1]?.amount || 0;
+    return prev > 0 && curr > prev;
+  });
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a365d]"></div>
+        <span className="ml-3 text-gray-500">Loading subscriptions...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#1a365d] dark:text-white">
+            Subscription Tracker
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {filtered.length} recurring items tracked across {years.length} years
+          </p>
+        </div>
+        <div className="bg-[#1a365d] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg">
+          <div className="text-xs text-gray-300">{taxYear} Subscriptions</div>
+          <div className="text-lg sm:text-xl font-bold text-[#d69e2e]">{formatCurrency(totalCurrent)}</div>
+        </div>
+      </div>
+
+      {/* Price increase alert */}
+      {priceIncreases.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+          <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+            {priceIncreases.length} subscription{priceIncreases.length > 1 ? "s" : ""} increased in price from {taxYear - 1}:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {priceIncreases.map((sub) => (
+              <span key={sub.description} className="text-xs bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 px-2 py-1 rounded">
+                {sub.description}: {formatCurrency(sub.years[taxYear - 1]?.amount || 0)} → {formatCurrency(sub.years[taxYear]?.amount || 0)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Year-over-year summary */}
+      {totalPrev > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600 dark:text-gray-400">{taxYear - 1} total: {formatCurrency(totalPrev)}</span>
+            <span className="text-gray-600 dark:text-gray-400">{taxYear} total: {formatCurrency(totalCurrent)}</span>
+            <span className={`font-medium ${totalCurrent > totalPrev ? "text-red-600" : "text-green-600"}`}>
+              {totalCurrent > totalPrev ? "+" : ""}{formatCurrency(totalCurrent - totalPrev)} ({totalPrev > 0 ? ((totalCurrent - totalPrev) / totalPrev * 100).toFixed(1) : "0"}%)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={subSearch}
+          onChange={(e) => setSubSearch(e.target.value)}
+          placeholder="Search subscriptions..."
+          className="w-full border dark:border-gray-600 rounded-lg px-4 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+        />
+      </div>
+
+      {/* Subscription table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Subscription</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Category</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Type</th>
+                {years.map((y) => (
+                  <th key={y} className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-300">{y}</th>
+                ))}
+                <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((sub) => {
+                const curr = sub.years[taxYear]?.amount || 0;
+                const prev = sub.years[taxYear - 1]?.amount || 0;
+                const change = prev > 0 ? curr - prev : 0;
+                return (
+                  <tr key={`${sub.categoryId}-${sub.description}`} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-2 font-medium dark:text-white">{sub.description}</td>
+                    <td className="px-4 py-2 text-gray-500 dark:text-gray-400 text-xs">{sub.categoryName}</td>
+                    <td className="px-4 py-2">
+                      <span className={`text-xs px-2 py-0.5 rounded ${sub.recurrenceType === "monthly" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"}`}>
+                        {sub.recurrenceType}
+                      </span>
+                    </td>
+                    {years.map((y) => (
+                      <td key={y} className="px-4 py-2 text-right dark:text-gray-300">
+                        {sub.years[y] ? formatCurrency(sub.years[y].amount) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                      </td>
+                    ))}
+                    <td className="px-4 py-2 text-right font-medium">
+                      {change !== 0 ? (
+                        <span className={change > 0 ? "text-red-600" : "text-green-600"}>
+                          {change > 0 ? "+" : ""}{formatCurrency(change)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y dark:divide-gray-700">
+          {filtered.map((sub) => {
+            const curr = sub.years[taxYear]?.amount || 0;
+            const prev = sub.years[taxYear - 1]?.amount || 0;
+            const change = prev > 0 ? curr - prev : 0;
+            return (
+              <div key={`${sub.categoryId}-${sub.description}`} className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium dark:text-white truncate">{sub.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{sub.categoryName}</p>
+                  </div>
+                  <div className="text-right ml-3 shrink-0">
+                    <p className="text-sm font-bold text-[#1a365d] dark:text-[#d69e2e]">{formatCurrency(curr)}</p>
+                    {change !== 0 && (
+                      <p className={`text-xs font-medium ${change > 0 ? "text-red-600" : "text-green-600"}`}>
+                        {change > 0 ? "+" : ""}{formatCurrency(change)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-2 text-xs text-gray-400">
+                  {years.map((y) => (
+                    <span key={y}>{y}: {sub.years[y] ? formatCurrency(sub.years[y].amount) : "—"}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="px-4 py-8 text-center text-gray-400 text-sm">
+            {subSearch ? "No subscriptions match your search." : "No recurring subscriptions found."}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
