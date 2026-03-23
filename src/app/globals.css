@@ -7,6 +7,11 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+.dark body,
+:root.dark body {
+  background-color: #111827;
+}
+
 /* Custom scrollbar for the main content */
 ::-webkit-scrollbar {
   width: 8px;
@@ -20,4 +25,11 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #718096;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #111827;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
 }
