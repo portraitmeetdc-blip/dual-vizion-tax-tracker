@@ -50,6 +50,7 @@ export async function PUT(request: NextRequest) {
       notes: body.notes,
       isRecurring: body.isRecurring,
       recurrenceType: body.recurrenceType,
+      categoryId: body.categoryId,
     })
     .where(eq(expenses.id, body.id))
     .returning();

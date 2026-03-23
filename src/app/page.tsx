@@ -762,6 +762,7 @@ export default function Dashboard() {
                   <ExpenseSection
                     key={category.id}
                     category={category}
+                    allCategories={categories}
                     expenses={catExpenses}
                     taxYear={taxYear}
                     onAdd={handleAddExpense}

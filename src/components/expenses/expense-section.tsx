@@ -8,6 +8,7 @@ import type { Expense, Category } from "@/db/schema";
 
 interface ExpenseSectionProps {
   category: Category;
+  allCategories: Category[];
   expenses: Expense[];
   taxYear: number;
   onAdd: (expense: {
@@ -25,6 +26,7 @@ interface ExpenseSectionProps {
 
 export function ExpenseSection({
   category,
+  allCategories,
   expenses,
   taxYear,
   onAdd,
@@ -155,6 +157,7 @@ export function ExpenseSection({
             <ExpenseRow
               key={expense.id}
               expense={expense}
+              categories={allCategories}
               onUpdate={onUpdate}
               onDelete={onDelete}
               onDuplicate={handleDuplicate}

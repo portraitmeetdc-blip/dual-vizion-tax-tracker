@@ -3,21 +3,23 @@
 import { useState } from "react";
 import { X, RefreshCw, Copy, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import type { Expense } from "@/db/schema";
+import type { Expense, Category } from "@/db/schema";
 
 interface ExpenseRowProps {
   expense: Expense;
+  categories: Category[];
   onUpdate: (expense: Partial<Expense> & { id: number }) => Promise<boolean>;
   onDelete: (id: number) => Promise<boolean>;
   onDuplicate: (expense: Expense) => void;
 }
 
-export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: ExpenseRowProps) {
+export function ExpenseRow({ expense, categories, onUpdate, onDelete, onDuplicate }: ExpenseRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editDesc, setEditDesc] = useState(expense.description);
   const [editDate, setEditDate] = useState(expense.date || "");
   const [editAmount, setEditAmount] = useState(String(expense.amount));
   const [editNotes, setEditNotes] = useState(expense.notes || "");
+  const [editCategoryId, setEditCategoryId] = useState(expense.categoryId);
 
   const handleSave = async () => {
     await onUpdate({
@@ -26,6 +28,7 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
       date: editDate || null,
       amount: parseFloat(editAmount) || 0,
       notes: editNotes || null,
+      categoryId: editCategoryId,
     });
     setIsEditing(false);
   };
@@ -38,54 +41,76 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
     return (
       <>
         {/* Desktop edit */}
-        <div className="hidden md:grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2 px-4 py-2 border-b bg-yellow-50">
-          <input
-            type="text"
-            value={editDesc}
-            onChange={(e) => setEditDesc(e.target.value)}
-            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") setIsEditing(false);
-            }}
-          />
-          <input
-            type="date"
-            value={editDate}
-            onChange={(e) => setEditDate(e.target.value)}
-            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
-          />
-          <input
-            type="number"
-            step="0.01"
-            value={editAmount}
-            onChange={(e) => setEditAmount(e.target.value)}
-            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-            }}
-          />
-          <input
-            type="text"
-            value={editNotes}
-            onChange={(e) => setEditNotes(e.target.value)}
-            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") setIsEditing(false);
-            }}
-          />
-          <button
-            onClick={handleSave}
-            className="text-green-600 hover:text-green-800 text-sm font-bold"
-          >
-            ✓
-          </button>
+        <div className="hidden md:block px-4 py-2 border-b bg-yellow-50 dark:bg-yellow-900/20 space-y-2">
+          <div className="grid grid-cols-[1fr_120px_120px_1fr_90px] gap-2">
+            <input
+              type="text"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
+            />
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+            />
+            <input
+              type="number"
+              step="0.01"
+              value={editAmount}
+              onChange={(e) => setEditAmount(e.target.value)}
+              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave();
+              }}
+            />
+            <input
+              type="text"
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
+            />
+            <button
+              onClick={handleSave}
+              className="text-green-600 hover:text-green-800 text-sm font-bold"
+            >
+              ✓
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 shrink-0">Move to:</label>
+            <select
+              value={editCategoryId}
+              onChange={(e) => setEditCategoryId(parseInt(e.target.value))}
+              className="border rounded px-2 py-1 text-xs flex-1 max-w-xs focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
 
         {/* Mobile edit */}
-        <div className="md:hidden px-4 py-3 border-b bg-yellow-50 space-y-2">
+        <div className="md:hidden px-4 py-3 border-b bg-yellow-50 dark:bg-yellow-900/20 space-y-2">
           <input
             type="text"
             value={editDesc}
@@ -116,6 +141,17 @@ export function ExpenseRow({ expense, onUpdate, onDelete, onDuplicate }: Expense
               }}
             />
           </div>
+          <select
+            value={editCategoryId}
+            onChange={(e) => setEditCategoryId(parseInt(e.target.value))}
+            className="w-full border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]"
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                Move to: {cat.name}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={editNotes}
